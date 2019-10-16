@@ -59,5 +59,12 @@ namespace ChartDemoOne.Models
         public bool HideXAxisGrid { get; set; }
         public bool HasBackgroundRules { get; set; }
         public List<BackgroundRule> BackgroundRules { get; set; }
+        public bool HasPatientData
+        {
+            get
+            {
+                return PatientData != null;
+            }
+        }
     }
 }
