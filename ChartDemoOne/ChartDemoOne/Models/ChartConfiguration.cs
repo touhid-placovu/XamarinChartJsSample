@@ -22,7 +22,7 @@ namespace ChartDemoOne.Models
             var chartConfigJsScript = $"<script type='text/javascript'>{chartConfigScript}</script>";
             var localScript = "<script src='file:///android_asset/chart_bundle.js' type='text/javascript'></script>";
             var style = @"<style>*,*::before,*::after {box-sizing: border-box;} html{height:100%; width:100%;-webkit-text-size-adjust: 100%;-webkit-tap-highlight-color: rgba(0, 0, 0, 0);} body{height:100%; width:100%;overflow:hidden;line-height: 1.15;padding:0; margin:0} #mycanvas{height:100%; width:1000px;padding:0; margin:0;} .conteiner{height:100%;overflow-x:auto}</style>";
-            var meta = @"<meta charset=""utf-8"" /><meta name=""viewport"" content=""width=device-width"" />";
+            var meta = @"<meta http-equiv=""Content-Type"" content=""text/html"" charset=""utf-8"" /><meta name=""viewport"" content=""width=device-width"" />";
             var canvas = @"<canvas id=""mycanvas""></canvas>";
             var document = $@"<html><head>{meta}{style}{localScript}</head><body><div class=""conteiner"">{canvas}</div>{chartConfigJsScript}</body></html>";
             return document;
@@ -158,7 +158,7 @@ namespace ChartDemoOne.Models
                     titleSpacing = 8,
                     bodySpacing = 8,
                     displayColors = false,
-                    callback = GetToolTipCallBackFunction()
+                    callbacks = GetToolTipCallBackFunction()
                 },
                 animation = GetChartAnimation(),
                 hover = new
@@ -205,27 +205,41 @@ namespace ChartDemoOne.Models
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(@"replaceQuoteStart{
-                    title: function(tooltipItem, data)
-                    {
-                        title = data.datasets[tooltipItem[0].datasetIndex].label + ' : ' + tooltipItem[0].yLabel + ' (' + tooltipItem[0].xLabel + ' )';
-                        return title;
-                    },
-                    label: function(tooltipItem, data)
-                    {
-                        var dataArray = [];
-                        if (data.tooltipLabels == undefined || data.tooltipLabels == null)
-                            return dataArray;
-                        var tooltipLabels = data.tooltipLabels;
-                        var tooltipData = data.tooltipDataSet[tooltipItem.datasetIndex].DataList[tooltipItem.index];
-                        var size = tooltipLabels != undefined ? tooltipLabels.length : 0;
-                        for (var i = 0; i < size; i++)
-                        {
-                            var item = '\u27A4 ' + tooltipLabels[i] + ' : ' + tooltipData[i] + ' ';
-                            dataArray.push(item);
-                        }
-                        return dataArray;
-                    },
-                }replaceQuoteEnd");
+              title: function(tooltipItem, data) {
+                title =
+                  data.datasets[tooltipItem[0].datasetIndex].label +
+                  ' : ' +
+                  tooltipItem[0].yLabel +
+                  ' (' +
+                  tooltipItem[0].xLabel +
+                  ' )';
+            return title;
+        },
+              label: function(tooltipItem, data)
+        {
+            var dataArray = [];
+            if (
+              data.tooltipLabels == undefined ||
+              data.tooltipLabels == null
+            )
+                return dataArray;
+            var tooltipLabels = data.tooltipLabels;
+            var tooltipData =
+              data.tooltipDataSet[tooltipItem.datasetIndex].DataList[
+                tooltipItem.index
+              ];
+            var size =
+              tooltipLabels != undefined ? tooltipLabels.length : 0;
+            for (var i = 0; i < size; i++)
+            {
+                var item =
+                  '➤ ' + tooltipLabels[i] + ' : ' + tooltipData[i] + ' ';
+                dataArray.push(item);
+            }
+            return dataArray;
+        }
+    }
+    replaceQuoteEnd");
 
             var data = builder.ToString().Replace("\r\n", "").Trim('"');
             return data;
