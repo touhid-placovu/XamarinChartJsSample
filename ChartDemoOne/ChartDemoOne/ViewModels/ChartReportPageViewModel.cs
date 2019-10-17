@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms;
 
@@ -18,7 +19,7 @@ namespace ChartDemoOne.ViewModels
         public ChartReportPageViewModel()
         {
             patientChartDataService = new PatientChartDataService();
-            LoadChartDataCommand = new Command(async () => await ExecuteLoadChartDataCommandAsync());            
+            LoadChartDataCommand = new Command(async () => await ExecuteLoadChartDataCommandAsync());
         }
 
         public async Task ExecuteLoadChartDataCommandAsync()
@@ -31,8 +32,8 @@ namespace ChartDemoOne.ViewModels
                 var response = await patientChartDataService.GetChartDataModel();
                 if (response != null)
                 {
-                    ChartDataModel = new ChartDataModel();                   
-                    ChartDataModel = response;               
+                    ChartDataModel = new ChartDataModel();
+                    ChartDataModel = response;
                     BuildReportHtml("line");
                     //await Task.Yield();
                 }
@@ -100,7 +101,7 @@ namespace ChartDemoOne.ViewModels
                 {
                     responsive = true,
                     maintainAspectRatio = false,
-                    fill = false,                    
+                    fill = false,
                     legend = new
                     {
                         position = "top"
@@ -129,25 +130,242 @@ namespace ChartDemoOne.ViewModels
                     tooltipLabels = chartDataModel.TooltipLabels,
                     tooltipDataSet = chartDataModel.TooltipSeries
                 },
-                //options = new
-                //{
-                //    responsive = true,
-                //    maintainAspectRatio = false,
-                //    fill = false,
-                //    legend = new
-                //    {
-                //        position = "top"
-                //    },
-                //    animation = new
-                //    {
-                //        animateScale = false
-                //    },
-                //}
-                options = JsonConvert.SerializeObject(GenerateChartOptions(chartDataModel)),
-                plugins = JsonConvert.SerializeObject(GenerateChartPlugins(chartDataModel))
+                options = GenerateChartOptionsOne(chartDataModel),
+                plugins = GenerateChartPlugins(chartDataModel)
             };
             var jsonConfig = JsonConvert.SerializeObject(config);
+            jsonConfig = RemoveExtraQuotation(jsonConfig);
             return jsonConfig;
+        }
+
+        
+
+        private object GenerateChartOptionsOne(ChartDataModel _chartData)
+        {
+            var chartOptions = new
+            {
+                responsive = false,
+                maintainAspectRatio = false,
+                scales = new
+                {
+                    xAxes = new[]
+                    {
+                        new
+                        {
+                            id = "x-axis-1",
+                            ticks = new
+                            {
+                                fontSize =  15,
+                                fontStyle =  "bold"
+                            },
+                            stacked = _chartData.IsStackedBarChart,
+                            gridLines = new
+                            {
+                                zeroLineWidth= 1,
+                                zeroLineColor= "#000",
+                            },
+                            scaleLabel = new
+                            {
+                                display= true,
+                                labelString= _chartData.XLabel,
+                                fontSize= 15,
+                                fontStyle= "bold"
+                            }
+
+                        }
+                    },
+                    yAxes = new[]
+                    {
+                        new
+                        {
+                            id = "y-axis-1",
+                            display= true,
+                            ticks = new
+                            {
+                                fontSize =  15,
+                                fontStyle =  "bold",
+                                beginAtZero = true
+                            },
+                            stacked = _chartData.IsStackedBarChart,
+                            gridLines = new
+                            {
+                                zeroLineWidth= 1,
+                                zeroLineColor= "#000",
+                                drawTicks= true,
+                                tickMarkLength= 15,
+                            },
+                            scaleLabel = new
+                            {
+                                display= true,
+                                labelString= _chartData.YLabel,
+                                fontSize= 15,
+                                fontStyle= "bold"
+                            }
+                        }
+                    }
+                },
+                title = new
+                {
+                    display = true,
+                    text = _chartData.ChartName,
+                    fontSize = 20,
+                    fontFamily = "Raleway",
+                },
+                backgroundRules = GetChartBackgroundRules(_chartData),
+                legend = new
+                {
+                    labels = new
+                    {
+                        usePointStyle = true,
+                        pointStyle = "round",
+                        fontSize = 15,
+                        padding = 40,
+                        fontFamily = "Raleway",
+                    }
+                },
+                tooltips = new
+                {
+                    backgroundColor = "#F7BB29",
+                    bodyFontColor = "#000",
+                    titleFontColor = "#000",
+                    caretPadding = 10,
+                    xPadding = 10,
+                    yPadding = 10,
+                    mode = "nearest",
+                    position = "nearest",
+                    titleFontSize = 15,
+                    bodyFontSize = 15,
+                    titleFontFamily = "Raleway",
+                    bodyFontFamily = "Raleway",
+                    titleSpacing = 8,
+                    bodySpacing = 8,
+                    displayColors = false,
+                    callback = GetToolTipCallBackFunction()
+                },
+                animation = GetChartAnimation(_chartData),
+                hover = new
+                {
+                    animationDuration = 0
+                }
+
+            };
+
+            //if (_chartData.IsPatientProgressGraph)
+            //{
+            //    if (_chartData.SurveyQuestionMaxScore > 0)
+            //    {
+            //        chartOptions.scales.yAxes[0].ticks.max = _chartData.SurveyQuestionMaxScore;
+            //    }
+            //    chartOptions.scales.xAxes[0].gridLines.display = false;
+            //}
+
+            return chartOptions;
+        }
+        private object GetChartBackgroundRules(ChartDataModel _chartData)
+        {
+            var backgroundRules = new List<object>();
+            if (_chartData.BackgroundRules != null)
+            {
+                foreach (var backgroundRule in _chartData.BackgroundRules)
+                {
+                    var ruleItem = new
+                    {
+                        BackgroundColor = $"{ backgroundRule.BackgroundColor}",
+                        LabelText = $"{backgroundRule.LabelText}",
+                        backgroundRule.YaxisSegementEnd,
+                        backgroundRule.YaxisSegementStart
+                    };
+                    backgroundRules.Add(ruleItem);
+                }
+            }
+            return backgroundRules;
+        }
+        private string RemoveExtraQuotation(string json)
+        {
+            try
+            {
+                var data = json.Replace("\"replaceQuoteStart", "");
+                data = data.Replace("replaceQuoteEnd\"", "");
+                return data;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        private string GetToolTipCallBackFunction()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(@"replaceQuoteStart{
+                    title: function(tooltipItem, data)
+                    {
+                        title = data.datasets[tooltipItem[0].datasetIndex].label + ' : ' + tooltipItem[0].yLabel + ' (' + tooltipItem[0].xLabel + ' )';
+                        return title;
+                    },
+                    label: function(tooltipItem, data)
+                    {
+                        var dataArray = [];
+                        if (data.tooltipLabels == undefined || data.tooltipLabels == null)
+                            return dataArray;
+                        var tooltipLabels = data.tooltipLabels;
+                        var tooltipData = data.tooltipDataSet[tooltipItem.datasetIndex].DataList[tooltipItem.index];
+                        var size = tooltipLabels != undefined ? tooltipLabels.length : 0;
+                        for (var i = 0; i < size; i++)
+                        {
+                            var item = '\u27A4 ' + tooltipLabels[i] + ' : ' + tooltipData[i] + ' ';
+                            dataArray.push(item);
+                        }
+                        return dataArray;
+                    },
+                }replaceQuoteEnd");
+
+            var data = builder.ToString().Replace("\r\n", "").Trim('"');
+            return data;
+        }
+
+        private string GetChartAnimation(ChartDataModel _chartData)
+        {
+            string chartAnimation = $@"replaceQuoteStart{{
+                duration: 1000,
+                onComplete: function()
+    {{
+    if ({_chartData.IsPatientComparativeData.ToBooleanString()})
+    {{
+        var chartInstance = this.chart;
+        var ctx = chartInstance.ctx;
+        ctx.textAlign = 'left';
+        ctx.font = '14px Open Sans';
+        ctx.fillStyle = '#fff';
+        Chart.helpers.each(this.data.datasets.forEach(function(dataset, i) {{
+            var meta = chartInstance.controller.getDatasetMeta(i);
+            Chart.helpers.each(meta.data.forEach(function(bar, index) {{
+                if ({_chartData.IsPatientComparativeWithProfessionalData.ToBooleanString()} && {_chartData.HasPatientData.ToBooleanString()})
+                {{
+                    if (i === 0 && $.inArray(bar._model.label, {JsonConvert.SerializeObject(_chartData.PatientData.Labels)}) > -1) {{
+                        ctx.fillText('\u25CF', bar._model.x - 5, bar._model.y + 10);
+                        ctx.fillText('\u25CF', bar._model.x - 5, bar._model.y + 25);
+                        ctx.fillText('\u25CF', bar._model.x - 5, bar._model.y + 40);
+                    }}
+                }}
+                else
+                {{
+                    if ({_chartData.HasPatientData.ToBooleanString()} && bar._model.datasetLabel === {JsonConvert.SerializeObject(_chartData.PatientData.LabelNames)}[index] &&
+                        bar._model.label === {JsonConvert.SerializeObject(_chartData.PatientData.Labels)}[index])
+                    {{
+                        ctx.fillText('\u25CF', bar._model.x - 5, bar._model.y + 10);
+                        ctx.fillText('\u25CF', bar._model.x - 5, bar._model.y + 25);
+                        ctx.fillText('\u25CF', bar._model.x - 5, bar._model.y + 40);
+                    }}
+                }}
+            }}),
+                                this);
+        }}),
+                            this);
+    }}
+}}
+            }}replaceQuoteEnd";
+            chartAnimation = chartAnimation.Replace("\r\n", "").Trim('"');
+            return chartAnimation;
         }
 
         private string GenerateChartOptions(ChartDataModel _chartData)
@@ -160,7 +378,7 @@ namespace ChartDemoOne.ViewModels
                     id: 'x-axis-1',
                     ticks:
             {{
-                fontSize: 15,
+                        fontSize: 15,
                         fontStyle: 'bold'
                     }},
                     stacked: {_chartData.IsStackedBarChart.ToBooleanString()},
@@ -171,7 +389,7 @@ namespace ChartDemoOne.ViewModels
                     }},
                     scaleLabel:
             {{
-                display: true,
+                        display: true,
                         labelString: '{_chartData.XLabel}',
                         fontSize: 15,
                         fontStyle: 'bold'
@@ -275,7 +493,6 @@ namespace ChartDemoOne.ViewModels
         var item = '\u27A4 ' + tooltipLabels[i] + ' : ' + tooltipData[i] + ' ';
         dataArray.push(item);
     }}
-    //return toolTipItem;
     return dataArray;
 }},
                 }}
@@ -337,7 +554,7 @@ namespace ChartDemoOne.ViewModels
 
         private string GenerateChartPlugins(ChartDataModel _chartData)
         {
-            string plugins = $@"[{{
+            string plugins = $@"replaceQuoteStart[{{
                 beforeDraw: function (chart) {{
                     if ({_chartData.HasBackgroundRules.ToBooleanString()} != undefined && {_chartData.HasBackgroundRules.ToBooleanString()}) {{
                         var ctx = chart.chart.ctx;
@@ -370,7 +587,8 @@ namespace ChartDemoOne.ViewModels
             }}
         }}
     }}
-}}]";
+}}]replaceQuoteEnd";
+            plugins = plugins.Replace("\r\n", "");
             return plugins;
         }
 
@@ -420,18 +638,19 @@ namespace ChartDemoOne.ViewModels
         {
             List<SeriesDataModel> models = new List<SeriesDataModel>();
 
-            foreach ( var data in chartDataModel.Series)
+            foreach (var data in chartDataModel.Series)
             {
-                models.Add(new SeriesDataModel {
+                models.Add(new SeriesDataModel
+                {
                     data = data.DataList,
                     label = data.LabelName,
                     backgroundColor = data.GraphProperty.backgroundColor,
                     borderWidth = data.GraphProperty.pointBorderWidth,
-                    fill = data.GraphProperty.fill.ToString().ToLower(),
+                    fill = data.GraphProperty.fill,
                     pointRadius = data.GraphProperty.pointRadius,
                     pointHoverRadius = data.GraphProperty.pointRadius,
                     borderColor = data.GraphProperty.backgroundColor,
-                });               
+                });
             }
             return models;
         }
