@@ -13,7 +13,7 @@ namespace ChartDemoOne.Views
         public SampleChartPage ()
 		{
 			InitializeComponent ();
-            _viewModel = new ChartReportPageViewModel();
+            _viewModel = new ChartReportPageViewModel("line");
             this.BindingContext = _viewModel;           
            
         }
